@@ -36,6 +36,17 @@ router.post('/pointages', async (req, res) => {
     }
 });
 
+router.get('/pointages', async (req, res) => {
+    const { date } = req.query;
+  
+    try {
+      const pointages = await Pointage.find({ date: new Date(date).toISOString().split('T')[0] });
+      res.status(200).json(pointages);
+    } catch (error) {
+      res.status(500).json({ message: "Erreur lors de la récupération des pointages", error: error.message });
+    }
+  });
+
 
 
 
