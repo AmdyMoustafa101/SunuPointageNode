@@ -2,7 +2,7 @@ const Pointage = require('../models/pointage');
 
 // Enregistrer un pointage
 exports.enregistrerPointage = async (req, res) => {
-  const { utilisateur_id, nom, prenom, role, type, vigile_matricule, vigile_prenom } = req.body;
+  const { utilisateur_id, nom, prenom, matricule, role, type, vigile_matricule, vigile_prenom } = req.body;
 
   try {
     const heure = new Date().toLocaleTimeString();
@@ -11,6 +11,7 @@ exports.enregistrerPointage = async (req, res) => {
       utilisateur_id,
       nom,
       prenom,
+      matricule,
       role,
       date: new Date(),
       vigile_matricule,

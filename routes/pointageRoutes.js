@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 
 // Route pour enregistrer un pointage
 router.post('/pointages', async (req, res) => {
-    const { nom, prenom, role, date, heure_arrivee, heure_depart, vigile_nom, vigile_matricule } = req.body;
+    const { nom, prenom, matricule, role, date, heure_arrivee, heure_depart, vigile_nom, vigile_matricule } = req.body;
 
     // Validation des données
     if (!nom || !prenom || !role || !date || !vigile_nom || !vigile_matricule) {
@@ -19,7 +19,7 @@ router.post('/pointages', async (req, res) => {
         const pointage = new Pointage({
             nom,
             prenom,
-            
+            matricule,
             role,
             date,
             heure_arrivee,
