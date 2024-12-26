@@ -2,11 +2,12 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const connectDB = require('./config/db'); // Import de la connexion MongoDB
+const presenceRoutes = require('./routes/presenceRoutes');
 const logAccessRoutes = require('./routes/logAccessRoutes');
 const pointageRoutes = require('./routes/pointageRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3002;
 
 // Middleware
 app.use(bodyParser.json());
@@ -16,6 +17,7 @@ app.use(cors());
 // Ajouter les routes
 app.use('/api', logAccessRoutes);
 app.use('/api', pointageRoutes);
+app.use(presenceRoutes);
 
 
 // Connecter à MongoDB

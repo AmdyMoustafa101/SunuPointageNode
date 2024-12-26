@@ -7,19 +7,21 @@ const jwt = require('jsonwebtoken');
 
 // Route pour enregistrer un pointage
 router.post('/pointages', async (req, res) => {
-    const { nom, prenom, matricule, role, date, heure_arrivee, heure_depart, vigile_nom, vigile_matricule } = req.body;
+    const { userID, nom, prenom, matricule, telephone, role, date, heure_arrivee, heure_depart, vigile_nom, vigile_matricule } = req.body;
 
     // Validation des données
-    if (!nom || !prenom || !role || !date || !vigile_nom || !vigile_matricule) {
+    if (!userID || !nom || !prenom || !role || !date || !vigile_nom || !vigile_matricule) {
         return res.status(400).json({ message: 'Les champs requis sont manquants' });
     }
 
     try {
         // Créer un nouveau pointage
         const pointage = new Pointage({
+            userID,
             nom,
             prenom,
             matricule,
+            telephone,
             role,
             date,
             heure_arrivee,
