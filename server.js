@@ -44,10 +44,19 @@ parser.on('data', (data) => {
   });
 
   // Envoyer au serveur Laravel
-  axios.post('http://localhost:8002/api/assign-card', { cardID: rfidCardId })
-    .then((response) => console.log('Carte attribuée avec succès:', response.data))
-    .catch((error) => console.error('Erreur lors de l\'attribution:', error));
+  axios.post('http://localhost:8002/api/assign-card', { uid: rfidCardId, userType: 'employes', userId: null })
+    .then((response) => {
+      console.log('Carte attribuée avec succès:', response.data);
+    })
+    .catch((error) => {
+      if (error.response) {
+        console.error('Erreur Laravel:', error.response.data.message);
+      } else {
+        console.error('Erreur lors de la connexion au serveur Laravel:', error.message);
+      }
+    });
 });
+
 
 // Connecter à MongoDB et démarrer le serveur
 connectDB()
