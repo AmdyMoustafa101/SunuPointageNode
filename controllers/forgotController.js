@@ -49,7 +49,7 @@ exports.sendEmail = async (req, res) => {
     );
 
     // Génération du lien vers le formulaire de réinitialisation
-    const changePasswordForm = `${process.env.FRONTEND_URL}?sirlou=${token}`;
+    const changePasswordForm = `${process.env.FRONTEND_URL}/${email}`;
 
     // Options de l'email
     const mailOptions = {
