@@ -11,8 +11,8 @@ const forgot = require('./routes/forgotRoutes');
 const Pointage = require('./models/pointage'); // Modèle MongoDB 
 const axios = require('axios'); // Ajout de cette ligne pour importer axios
 
-const WebSocket = require('ws');
-const wss = new WebSocket.Server({ port: 3004 });
+// const WebSocket = require('ws');
+// const wss = new WebSocket.Server({ port: 3004 });
 
 const app = express();
 const PORT = process.env.PORT || 3005;
@@ -140,12 +140,12 @@ let isButtonPressed = false; // Indique si le bouton poussoir est pressé
 // });
 
 // WebSocket pour transmettre les données aux clients
-wss.on('connection', (client) => {
-  console.log('Client connecté au WebSocket.');
-  client.on('message', (message) => {
-      console.log(`Message reçu du client : ${message}`);
-  });
-});
+// wss.on('connection', (client) => {
+//   console.log('Client connecté au WebSocket.');
+//   client.on('message', (message) => {
+//       console.log(`Message reçu du client : ${message}`);
+//   });
+// });
 
 
 // Connecter à MongoDB et démarrer le serveur
