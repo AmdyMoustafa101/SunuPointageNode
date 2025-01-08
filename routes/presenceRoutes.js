@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getPresenceByDate, getYearlyPresenceAndAbsence } = require('../controllers/PresenceController');
+const { getPresenceByDate, getYearlyPresenceAndAbsence, getPresenceByCohorte, getMonthlyPresenceByDepartement, getWeeklyPresenceByCohorte, getMonthlyPresenceByCohorte } = require('../controllers/PresenceController');
 const { getAbsencesAndDelays } = require('../controllers/PresenceController');
 const { getWeeklyPresenceAndAbsence } = require('../controllers/PresenceController');
 const { getPresenceByDepartement, getWeeklyPresenceByDepartement } = require('../controllers/PresenceController');
@@ -106,12 +106,12 @@ router.get('/api/weekly-presences/cohorte', async (req, res) => {
       return res.status(400).json({ error: 'Les paramètres dateRangeStart, dateRangeEnd et cohorteId sont requis.' });
     }
 
-    // Récupération des présences hebdomadaires pour la cohorte
+    // Récupération des présences hebdomadaires pour le département
     const presences = await getWeeklyPresenceByCohorte(dateRangeStart, dateRangeEnd, parseInt(cohorteId, 10));
 
     res.json({ success: true, data: presences });
   } catch (error) {
-    console.error('Erreur lors de la récupération des présences hebdomadaires pour la cohorte:', error);
+    console.error('Erreur lors de la récupération des présences hebdomadaires pour le département:', error);
     res.status(500).json({ error: 'Erreur interne du serveur.' });
   }
 });
@@ -167,5 +167,143 @@ const dateRangeEnd = parseInt(year) === currentYear
     res.status(500).json({ error: 'Erreur interne du serveur.' });
   }
 });
+
+router.get('/api/monthly-presences/departement', async (req, res) => {
+  try {
+    const { month, year, departementId } = req.query;
+
+    // Validation des paramètres
+    if (!month || !year || !departementId) {
+      return res.status(400).json({
+        error: 'Les paramètres month, year et departementId sont requis.',
+      });
+    }
+
+    const monthInt = parseInt(month, 10);
+    const yearInt = parseInt(year, 10);
+
+    if (isNaN(monthInt) || isNaN(yearInt) || monthInt < 1 || monthInt > 12) {
+      return res.status(400).json({
+        error: 'Les paramètres month ou year sont invalides.',
+      });
+    }
+
+    // Calcul des plages de dates
+    const dateRangeStart = `${yearInt}-${String(monthInt).padStart(2, '0')}-01`;
+    const dateRangeEnd = `${yearInt}-${String(monthInt).padStart(2, '0')}-${new Date(yearInt, monthInt, 0).getDate()}`;
+
+
+    // Appel au contrôleur pour récupérer les présences mensuelles par département
+    const monthlyPresences = await getMonthlyPresenceByDepartement(
+      dateRangeStart,
+      dateRangeEnd,
+      parseInt(departementId, 10)
+    );
+
+    res.json({
+      success: true,
+      data: monthlyPresences,
+    });
+  } catch (error) {
+    console.error(
+      'Erreur lors de la récupération des présences mensuelles par département :',
+      error
+    );
+    res.status(500).json({ error: 'Erreur interne du serveur.' });
+  }
+});
+
+router.get('/api/monthly-presences/cohorte', async (req, res) => {
+  try {
+    const { month, year, cohorteId } = req.query;
+
+    // Validation des paramètres
+    if (!month || !year || !cohorteId) {
+      return res.status(400).json({
+        error: 'Les paramètres month, year et cohorteId sont requis.',
+      });
+    }
+
+    const monthInt = parseInt(month, 10);
+    const yearInt = parseInt(year, 10);
+
+    if (isNaN(monthInt) || isNaN(yearInt) || monthInt < 1 || monthInt > 12) {
+      return res.status(400).json({
+        error: 'Les paramètres month ou year sont invalides.',
+      });
+    }
+
+    // Calcul des plages de dates
+    const dateRangeStart = `${yearInt}-${String(monthInt).padStart(2, '0')}-01`;
+    const dateRangeEnd = `${yearInt}-${String(monthInt).padStart(2, '0')}-${new Date(yearInt, monthInt, 0).getDate()}`;
+
+
+    // Appel au contrôleur pour récupérer les présences mensuelles par département
+    const monthlyPresences = await getMonthlyPresenceByCohorte(
+      dateRangeStart,
+      dateRangeEnd,
+      parseInt(cohorteId, 10)
+    );
+
+    res.json({
+      success: true,
+      data: monthlyPresences,
+    });
+  } catch (error) {
+    console.error(
+      'Erreur lors de la récupération des présences mensuelles par département :',
+      error
+    );
+    res.status(500).json({ error: 'Erreur interne du serveur.' });
+  }
+});
+
+router.get('/api/departements/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validation des paramètres
+    if (!id) {
+      return res.status(400).json({ error: "L'identifiant du département est requis." });
+    }
+
+    // Appeler la fonction pour récupérer le nom du département
+    const departementName = await getDepartementNameById(id);
+
+    if (!departementName) {
+      return res.status(404).json({ error: 'Département introuvable.' });
+    }
+
+    res.json(departementName); // Retourner uniquement le nom
+  } catch (error) {
+    console.error("Erreur lors de la récupération du nom du département :", error);
+    res.status(500).json({ error: 'Erreur interne du serveur.' });
+  }
+});
+
+router.get('/api/cohortes/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validation des paramètres
+    if (!id) {
+      return res.status(400).json({ error: "L'identifiant de la cohorte est requis." });
+    }
+
+    // Appeler la fonction pour récupérer le nom de la cohorte
+    const cohorteName = await getCohorteNameById(id);
+
+    if (!cohorteName) {
+      return res.status(404).json({ error: 'Cohorte introuvable.' });
+    }
+
+    res.json(cohorteName); // Retourner uniquement le nom
+  } catch (error) {
+    console.error("Erreur lors de la récupération du nom de la cohorte :", error);
+    res.status(500).json({ error: 'Erreur interne du serveur.' });
+  }
+});
+
+
 
 module.exports = router;

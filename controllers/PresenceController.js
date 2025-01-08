@@ -261,6 +261,7 @@ async function getWeeklyPresenceAndAbsence(dateRangeStart, dateRangeEnd) {
 }
 
 async function getWeeklyPresenceByCohorte(dateRangeStart, dateRangeEnd, cohorteId) {
+  
   const start = new Date(dateRangeStart);
   const end = new Date(dateRangeEnd);
 
@@ -283,11 +284,13 @@ async function getWeeklyPresenceByCohorte(dateRangeStart, dateRangeEnd, cohorteI
     [cohorteId]
   );
 
+
   // Récupérer les pointages pour la période donnée
   const pointages = await Pointage.find({
-    date: { $gte: start, $lte: end },
-    role: 'apprenant',
+    date: { $gte: dateRangeStart, $lte: dateRangeEnd },
+    role: { $eq: 'apprenant' },
   }).exec();
+
 
   // Calcul des présences
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -296,9 +299,9 @@ async function getWeeklyPresenceByCohorte(dateRangeStart, dateRangeEnd, cohorteI
     for (const apprenant of apprenants) {
       let horaires = [];
       try {
-        horaires = JSON.parse(apprenant.horaires || '[]');
+        horaires = apprenant.horaires || '[]';
       } catch (e) {
-        console.warn(`Horaires invalides pour l'apprenant ${apprenant.userID}:`, apprenant.horaires);
+        console.warn(`Horaires invalides pour l'employé ${apprenant.userID}:`, apprenant.horaires);
         continue;
       }
 
@@ -319,6 +322,7 @@ async function getWeeklyPresenceByCohorte(dateRangeStart, dateRangeEnd, cohorteI
 
   await mysqlConnection.end();
   return weeklyStats;
+  
 }
 
 async function getWeeklyPresenceByDepartement(dateRangeStart, dateRangeEnd, departementId) {
@@ -383,6 +387,143 @@ async function getWeeklyPresenceByDepartement(dateRangeStart, dateRangeEnd, depa
   return weeklyStats;
 }
 
+async function getMonthlyPresenceByDepartement(monthStart, monthEnd, departementId) {
+  const start = new Date(monthStart);
+  const end = new Date(monthEnd);
+
+  // Initialiser les résultats avec tous les jours du mois
+  const monthlyStats = {};
+
+  // Créer un tableau des jours de la semaine, de lundi à dimanche
+  const daysOfWeek = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+
+  const mysqlConnection = await mysql.createConnection(dbConfig);
+
+  // Récupérer les employés du département spécifié
+  const [employes] = await mysqlConnection.query(
+    'SELECT e.id AS userID, e.role, d.horaires FROM employes e LEFT JOIN departements d ON e.departement_id = d.id WHERE d.id = ?',
+    [departementId]
+  );
+
+  // Récupérer les pointages pour la période donnée
+  const pointages = await Pointage.find({
+    date: { $gte: monthStart, $lte: monthEnd },
+    role: { $ne: 'apprenant' },
+  }).exec();
+
+  // Calcul des présences pour chaque jour du mois
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const dayOfWeek = d.toLocaleString('fr-FR', { weekday: 'long' }).toLowerCase();
+    const dateKey = d.toLocaleDateString(); // Utiliser la date complète comme clé (ex : "01/01/2025")
+
+    // Initialiser la journée si ce n'est pas déjà fait
+    if (!monthlyStats[dateKey]) {
+      monthlyStats[dateKey] = 0;
+    }
+
+    // Incrémenter les présences pour ce jour du mois
+    for (const employe of employes) {
+      let horaires = [];
+      try {
+        horaires = employe.horaires || '[]';
+      } catch (e) {
+        console.warn(`Horaires invalides pour l'employé ${employe.userID}:`, employe.horaires);
+        continue;
+      }
+
+      const horaireJour = Object.values(horaires).find((h) => h.jours?.[dayOfWeek]);
+      if (!horaireJour) continue; // Non programmé ce jour-là
+
+      const dailyPointage = pointages.find(
+        (p) =>
+          p.userID.toString() === employe.userID.toString() &&
+          new Date(p.date).toDateString() === d.toDateString()
+      );
+
+      if (dailyPointage) {
+        monthlyStats[dateKey]++;
+      }
+    }
+  }
+
+  // Convertir les résultats mensuels en format lisible
+  const result = Object.entries(monthlyStats).map(([date, presences]) => ({
+    date: date,
+    presences: presences,
+  }));
+  await mysqlConnection.end();
+  return result;
+}
+
+async function getMonthlyPresenceByCohorte(monthStart, monthEnd, cohorteId) {
+  const start = new Date(monthStart);
+  const end = new Date(monthEnd);
+
+  // Initialiser les résultats avec tous les jours du mois
+  const monthlyStats = {};
+
+  // Créer un tableau des jours de la semaine, de lundi à dimanche
+  const daysOfWeek = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+
+  const mysqlConnection = await mysql.createConnection(dbConfig);
+
+  // Récupérer les apprenants de la cohorte spécifiée
+  const [apprenants] = await mysqlConnection.query(
+    'SELECT a.id AS userID, c.horaires FROM apprenants a JOIN cohortes c ON a.cohorte_id = c.id WHERE c.id = ?',
+    [cohorteId]
+  );
+
+  // Récupérer les pointages pour la période donnée
+  const pointages = await Pointage.find({
+    date: { $gte: monthStart, $lte: monthEnd },
+    role: { $eq: 'apprenant' },
+  }).exec();
+
+  // Calcul des présences pour chaque jour du mois
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const dayOfWeek = d.toLocaleString('fr-FR', { weekday: 'long' }).toLowerCase();
+    const dateKey = d.toLocaleDateString(); // Utiliser la date complète comme clé (ex : "01/01/2025")
+
+    // Initialiser la journée si ce n'est pas déjà fait
+    if (!monthlyStats[dateKey]) {
+      monthlyStats[dateKey] = 0;
+    }
+
+    // Incrémenter les présences pour ce jour du mois
+    for (const apprenant of apprenants) {
+      let horaires = [];
+      try {
+        horaires = apprenant.horaires || '[]';
+      } catch (e) {
+        console.warn(`Horaires invalides pour l'apprenant ${apprenant.userID}:`, apprenant.horaires);
+        continue;
+      }
+
+      const horaireJour = Object.values(horaires).find((h) => h.jours?.[dayOfWeek]);
+      if (!horaireJour) continue; // Non programmé ce jour-là
+
+      const dailyPointage = pointages.find(
+        (p) =>
+          p.userID.toString() === apprenant.userID.toString() &&
+          new Date(p.date).toDateString() === d.toDateString()
+      );
+
+      if (dailyPointage) {
+        monthlyStats[dateKey]++;
+      }
+    }
+  }
+
+  // Convertir les résultats mensuels en format lisible
+  const result = Object.entries(monthlyStats).map(([date, presences]) => ({
+    date: date,
+    presences: presences,
+  }));
+  await mysqlConnection.end();
+  return result;
+} 
+
+
 
 async function getYearlyPresenceAndAbsence(dateRangeStart, dateRangeEnd) {
   const start = new Date(dateRangeStart);
@@ -422,7 +563,6 @@ async function getYearlyPresenceAndAbsence(dateRangeStart, dateRangeEnd) {
       date: { $gte: dateRangeStart, $lte: dateRangeEnd },
     }).exec();
 
-    console.log("Les pointages : ", pointages);
     const today = new Date(); 
 
     // Parcourir chaque jour de l'année
@@ -579,7 +719,7 @@ async function getPresenceByDepartement(date, departementId) {
 
     const nomDepartement = employe.departement_nom;
 
-    const horaireJour = horaires.find(h => h.jours?.[dayOfWeek]);
+    const horaireJour = Object.values(horaires).find(h => h.jours?.[dayOfWeek]);
 
     // Calcul des retards et du statut
     const retardArrivee = horaireJour
@@ -610,6 +750,48 @@ async function getPresenceByDepartement(date, departementId) {
   return Object.values(groupedResults); // Renvoie un tableau regroupé par userId
 }
 
+async function getCohorteNameById(cohorteId) {
+  const mysqlConnection = await mysql.createConnection(dbConfig);
+
+  try {
+    const [rows] = await mysqlConnection.query(
+      'SELECT nom FROM cohortes WHERE id = ?',
+      [cohorteId]
+    );
+    if (rows.length > 0) {
+      return rows[0].nom; // Retourne le nom de la cohorte
+    } else {
+      throw new Error('Cohorte introuvable');
+    }
+  } catch (error) {
+    console.error('Erreur lors de la récupération du nom de la cohorte:', error.message);
+    throw error;
+  } finally {
+    await mysqlConnection.end();
+  }
+}
+
+async function getDepartementNameById(departementId) {
+  const mysqlConnection = await mysql.createConnection(dbConfig);
+
+  try {
+    const [rows] = await mysqlConnection.query(
+      'SELECT nom FROM departements WHERE id = ?',
+      [departementId]
+    );
+    if (rows.length > 0) {
+      return rows[0].nom; // Retourne le nom du département
+    } else {
+      throw new Error('Département introuvable');
+    }
+  } catch (error) {
+    console.error('Erreur lors de la récupération du nom du département:', error.message);
+    throw error;
+  } finally {
+    await mysqlConnection.end();
+  }
+}
+
 
 
 module.exports = {
@@ -621,4 +803,8 @@ module.exports = {
   getPresenceByCohorte,
   getPresenceByDepartement,
   getWeeklyPresenceByCohorte,
+  getMonthlyPresenceByDepartement,
+  getMonthlyPresenceByCohorte,
+  getCohorteNameById,
+  getDepartementNameById,
 };
