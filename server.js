@@ -9,6 +9,8 @@ const logAccessRoutes = require('./routes/logAccessRoutes');
 const pointageRoutes = require('./routes/pointageRoutes');
 const forgot = require('./routes/forgotRoutes');
 const Pointage = require('./models/pointage'); // Modèle MongoDB 
+const forgot = require('./routes/forgotRoutes');
+const historiqueRoutes = require('./routes/historiqueRoutes');
 const axios = require('axios'); // Ajout de cette ligne pour importer axios
 
 // const WebSocket = require('ws');
@@ -26,23 +28,50 @@ app.use('/api', logAccessRoutes);
 app.use('/api', pointageRoutes);
 app.use(presenceRoutes);
 app.use(forgot);
+// Ajouter la route pour l'historique
+app.use('/api', historiqueRoutes);
 
-// Communication avec Arduino via SerialPort
+// //Communication avec Arduino via SerialPort
 // const serialPort = new SerialPort({
-//     path: '/dev/ttyUSB1', // Remplacez par le bon port série
+//     path: '/dev/ttyUSB0', // Remplacez par le bon port série
 //     baudRate: 9600,
 // });
 // const parser = serialPort.pipe(new ReadlineParser({ delimiter: '\n' }));
 
 
-let isButtonPressed = false; // Indique si le bouton poussoir est pressé
+// let isButtonPressed = false; // Indique si le bouton poussoir est pressé
+// let isLoginMode = false; // Nouveau mode pour la connexion
+// let currentMode = null; // null, 'pointage', 'login'
+// Logique principale pour gérer les cartes RFIDlet currentMode = null; // null, 'pointage', 'login'
 
+// Logique principale pour gérer les cartes RFID
+// Communication avec Arduino via SerialPort
 // Logique principale pour gérer les cartes RFID
 // parser.on('data', async (data) => {
 //     const trimmedData = data.trim();
-//     if (trimmedData === 'BUTTON_PRESSED') {
-//         console.log('Bouton poussoir activé. Mode Pointage.');
+
+//     // Gestion des boutons poussoirs pour définir le mode
+//     if (trimmedData === 'POINTAGE_BUTTON_PRESSED') {
+//         console.log('Mode Pointage activé. Attente de carte...');
+//         currentMode = 'pointage';
 //         isButtonPressed = true;
+
+//         // Informer les clients WebSocket du changement de mode
+//         notifyWebSocketClients({ mode: 'pointage', message: 'Mode Pointage activé.' });
+//         return;
+//     } else if (trimmedData === 'LOGIN_BUTTON_PRESSED') {
+//         console.log('Mode Connexion activé. Attente de carte...');
+//         currentMode = 'login';
+//         isButtonPressed = true;
+
+//         // Informer les clients WebSocket du changement de mode
+//         notifyWebSocketClients({ mode: 'login', message: 'Mode Connexion activé.' });
+//         return;
+//     }
+
+//     // Lecture de la carte RFID
+//     if (!trimmedData.startsWith('UID:')) {
+//         console.log(`Donnée inattendue :  ${trimmedData}`);
 //         return;
 //     }
 
@@ -153,7 +182,7 @@ connectDB()
     .then(() => {
         console.log('MongoDB connecté. Démarrage du serveur...');
         app.listen(PORT, () => {
-            console.log(`Serveur en cours d'exécution sur le port ${PORT}`);
+            console.log(`Serveur en cours d exécution sur le port ${PORT}`);
         });
     })
     .catch((err) => {
