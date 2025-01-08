@@ -9,12 +9,11 @@ const logAccessRoutes = require('./routes/logAccessRoutes');
 const pointageRoutes = require('./routes/pointageRoutes');
 const forgot = require('./routes/forgotRoutes');
 const Pointage = require('./models/pointage'); // Modèle MongoDB 
-const forgot = require('./routes/forgotRoutes');
 const historiqueRoutes = require('./routes/historiqueRoutes');
 const axios = require('axios'); // Ajout de cette ligne pour importer axios
 
-// const WebSocket = require('ws');
-// const wss = new WebSocket.Server({ port: 3004 });
+const WebSocket = require('ws');
+const wss = new WebSocket.Server({ port: 3004 });
 
 const app = express();
 const PORT = process.env.PORT || 3005;
