@@ -8,6 +8,8 @@ const presenceRoutes = require('./routes/presenceRoutes');
 const logAccessRoutes = require('./routes/logAccessRoutes');
 const pointageRoutes = require('./routes/pointageRoutes');
 const Pointage = require('./models/pointage'); // Modèle MongoDB 
+const forgot = require('./routes/forgotRoutes');
+const historiqueRoutes = require('./routes/historiqueRoutes');
 const axios = require('axios'); // Ajout de cette ligne pour importer axios
 
 const WebSocket = require('ws');
@@ -24,8 +26,11 @@ app.use(cors());
 app.use('/api', logAccessRoutes);
 app.use('/api', pointageRoutes);
 app.use(presenceRoutes);
+app.use(forgot);
+// Ajouter la route pour l'historique
+app.use('/api', historiqueRoutes);
 
-// Communication avec Arduino via SerialPort
+//Communication avec Arduino via SerialPort
 const serialPort = new SerialPort({
     path: '/dev/ttyUSB0', // Remplacez par le bon port série
     baudRate: 9600,
@@ -96,6 +101,8 @@ parser.on('data', async (data) => {
     currentMode = null;
 });
 
+
+
 // Fonction pour notifier les clients WebSocket
 function notifyWebSocketClients(data) {
     wss.clients.forEach((client) => {
@@ -131,7 +138,7 @@ async function handlePointage(rfidCardId) {
                 prenom: userData.prenom,
                 matricule: userData.matricule,
                 telephone: userData.telephone,
-                role: userData.role || 'employe',
+                role: userData.role || 'apprenant',
                 date: formattedDate,
                 heure_arrivee: currentTime,
                 heure_depart: null,
@@ -225,18 +232,6 @@ async function handleCardAssignment(rfidCardId) {
 
 
 
-
-
-
-
-
-// // WebSocket pour transmettre les données aux clients
-// wss.on('connection', (client) => {
-//   console.log('Client connecté au WebSocket.');
-//   client.on('message', (message) => {
-//       console.log(Message reçu du client : ${message});
-//   });
-// });
 
 
 // Connecter à MongoDB et démarrer le serveur
