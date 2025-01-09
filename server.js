@@ -7,6 +7,8 @@ const connectDB = require('./config/db'); // Connexion à MongoDB
 const presenceRoutes = require('./routes/presenceRoutes');
 const logAccessRoutes = require('./routes/logAccessRoutes');
 const pointageRoutes = require('./routes/pointageRoutes');
+const historiqueRoutes = require('./routes/historiqueRoutes');
+
 const Pointage = require('./models/pointage'); // Modèle MongoDB 
 const axios = require('axios'); // Ajout de cette ligne pour importer axios
 
@@ -24,10 +26,12 @@ app.use(cors());
 app.use('/api', logAccessRoutes);
 app.use('/api', pointageRoutes);
 app.use(presenceRoutes);
+app.use('/api', historiqueRoutes);
+
 
 // Communication avec Arduino via SerialPort
 const serialPort = new SerialPort({
-    path: '/dev/ttyUSB0', // Remplacez par le bon port série
+    path: '/dev/ttyACM0', // Port pour attribution
     baudRate: 9600,
 });
 const parser = serialPort.pipe(new ReadlineParser({ delimiter: '\n' }));
@@ -40,7 +44,38 @@ let currentMode = null; // null, 'pointage', 'login'
 
 // Logique principale pour gérer les cartes RFID
 // Communication avec Arduino via SerialPort
-// Logique principale pour gérer les cartes RFID
+
+// parserAssignment.on('data', async (data) => {
+//     const trimmedData = data.trim();
+//     console.log(`Carte lue pour assignation : ${trimmedData}`);
+
+    
+
+
+//     if (!trimmedData.startsWith('UID:')) {
+//         console.log(`Donnée inattendue : ${trimmedData}`);
+//         return;
+//     }
+
+//     const rfidCardId = trimmedData.toUpperCase();
+//     console.log(`Carte RFID lue : ${rfidCardId}`);
+
+//     // Notifier les clients WebSocket de la carte scannée
+//     wss.clients.forEach((client) => {
+//         if (client.readyState === WebSocket.OPEN) {
+//             client.send(
+//                 JSON.stringify({
+//                     cardID: rfidCardId,
+//                 })
+//             );
+//         }
+//     });
+
+//     await handleCardAssignment(rfidCardId);
+//     await handleLogin(rfidCardId);
+// });
+
+//Logique principale pour gérer les cartes RFID
 parser.on('data', async (data) => {
     const trimmedData = data.trim();
 
@@ -162,10 +197,10 @@ async function handleLogin(rfidCardId) {
 
         if (response.data.message === 'Connexion réussie') {
             console.log('Connexion réussie');
-            serialPort.write('Login success\n');
+            serialPortAssignment.write('Login success\n');
         } else {
             console.log('Connexion échouée');
-            serialPort.write('Login failed\n');
+            serialPortAssignment.write('Login failed\n');
         }
     } catch (error) {
         console.error('Erreur lors de la connexion :', error.response?.data?.message || error.message);
